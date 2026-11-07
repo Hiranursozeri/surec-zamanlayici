@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Süreç Zamanlayıcı Simülatörü</title>
+</head>
+<body>
+  <h1>Süreç Zamanlayıcı Simülatörü</h1>
+  <p id="durum">Sunucuya bağlanılıyor...</p>
+  <script>
+    fetch('/api/durum')
+      .then(r => r.json())
+      .then(veri => document.getElementById('durum').textContent = veri.mesaj);
+  </script>
+</body>
+</html>
