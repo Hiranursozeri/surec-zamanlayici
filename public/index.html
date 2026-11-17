@@ -1,16 +1,162 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-tema="yumusak">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Süreç Zamanlayıcı Simülatörü</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Süreç Zamanlayıcı Simülatörü</h1>
-  <p id="durum">Sunucuya bağlanılıyor...</p>
-  <script>
-    fetch('/api/durum')
-      .then(r => r.json())
-      .then(veri => document.getElementById('durum').textContent = veri.mesaj);
-  </script>
+  <!-- Üst çubuk -->
+  <header class="ust">
+    <div class="marka">
+      <div class="logo" aria-hidden="true"><b></b><b></b><b></b></div>
+      <span>Süreç Zamanlayıcı</span>
+    </div>
+    <label class="senaryo-sec">
+      <span>Senaryo</span>
+      <select id="senaryoSec">
+        <option value="">Kendi süreçlerim</option>
+      </select>
+    </label>
+    <div class="bosluk"></div>
+    <button class="dugme" id="temaDegistir" title="Temayı değiştir"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 1a6 6 0 0 1 0 12z" fill="currentColor"/></svg><span id="temaAdi">Koyu tema</span></button>
+    <label class="dugme" for="iceAktarDosya">İçe aktar</label>
+    <input type="file" id="iceAktarDosya" accept=".json,application/json" hidden>
+    <button class="dugme" id="disaAktar">Dışa aktar</button>
+    <button class="dugme birincil" id="calistir">▶&nbsp; Simülasyonu çalıştır</button>
+  </header>
+
+  <div class="duzen">
+    <!-- Sol panel: senaryo ve yöntem ayarları -->
+    <aside class="panel">
+      <section id="senaryoKart" class="senaryo-kart" hidden>
+        <span class="ust-etiket">Senaryo</span>
+        <h3 id="senaryoAd"></h3>
+        <p id="senaryoAciklama"></p>
+        <p class="ders" id="senaryoDers"></p>
+      </section>
+
+      <section>
+        <h2 class="bolum">Zamanlama yöntemi</h2>
+        <div class="segment" role="radiogroup" aria-label="Zamanlama yöntemi">
+          <button type="button" data-yontem="fifo">FIFO</button>
+          <button type="button" data-yontem="rr" class="secili">Round Robin</button>
+          <button type="button" data-yontem="oncelikli">Öncelikli</button>
+        </div>
+        <p class="yontem-aciklama" id="yontemAciklama"></p>
+
+        <div class="ayar" data-gorunur="rr">
+          <div>Quantum (ms)<small>Tek seferde en fazla çalışma süresi</small></div>
+          <div class="sayac"><button type="button" data-azalt="quantum">−</button><input id="quantum" type="number" min="1" max="500" value="20"><button type="button" data-arttir="quantum">+</button></div>
+        </div>
+        <div class="ayar" data-gorunur="oncelikli">
+          <div>Kesintili<small>Daha önemlisi gelince çalışan durdurulur</small></div>
+          <label class="anahtar"><input id="kesintili" type="checkbox" checked><span></span></label>
+        </div>
+        <div class="ayar" data-gorunur="oncelikli">
+          <div>Yaşlandırma (ms)<small>0 = kapalı. Bu kadar beklemede öncelik 1 artar</small></div>
+          <div class="sayac"><button type="button" data-azalt="yaslandirma">−</button><input id="yaslandirma" type="number" min="0" max="500" value="0"><button type="button" data-arttir="yaslandirma">+</button></div>
+        </div>
+        <div class="ayar">
+          <div>Bağlam değişimi (ms)<small>CPU süreç değiştirirken kaybedilen süre</small></div>
+          <div class="sayac"><button type="button" data-azalt="gecis">−</button><input id="gecis" type="number" min="0" max="50" value="0"><button type="button" data-arttir="gecis">+</button></div>
+        </div>
+      </section>
+    </aside>
+
+    <main>
+      <div class="hata" id="hata" role="alert" hidden></div>
+
+      <!-- 1. Süreçler ve sonuçları tek tabloda -->
+      <section class="kart">
+        <div class="baslik">
+          <h2>Süreçler ve sonuçları <span class="soluk" id="surecSayisi">0 / 20</span></h2>
+          <div class="baslik-sag">
+            <span class="soluk" id="sonucDurumu">Sonuç sütunları simülasyondan sonra dolar</span>
+            <button class="dugme kucuk hayalet" id="temizle" type="button">Temizle</button>
+          </div>
+        </div>
+        <div class="tablo-kap">
+          <table class="ana-tablo">
+            <thead>
+              <tr class="grup">
+                <th colspan="5">Girdi</th>
+                <th colspan="5" class="sonuc-grup">Sonuç (ms)</th>
+                <th></th>
+              </tr>
+              <tr>
+                <th>Uygulama</th><th>Tür</th><th class="sag">Varış</th><th class="sag">Süre</th><th class="sag">Öncelik</th>
+                <th class="sag sonuc-bas">İlk çalışma</th><th class="sag">Bitiş</th><th class="sag">Yanıt</th><th class="sag">Bekleme</th><th class="sag">Dönüş</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="surecListesi"></tbody>
+            <tfoot id="tabloAlt"></tfoot>
+          </table>
+        </div>
+        <form id="surecForm" class="ekle-satiri" autocomplete="off">
+          <span class="arti">+</span>
+          <input id="fAd" placeholder="Uygulama adı, örn. Spotify – müzik çalma" maxlength="40" required aria-label="Uygulama adı">
+          <select id="fTur" aria-label="Tür">
+            <option value="etkilesimli">Etkileşimli</option>
+            <option value="kullanici" selected>Kullanıcı</option>
+            <option value="sistem">Sistem</option>
+            <option value="arkaPlan">Arka plan</option>
+            <option value="bakim">Bakım</option>
+          </select>
+          <label>Varış<input id="fVaris" type="number" min="0" value="0" required></label>
+          <label>Süre<input id="fSure" type="number" min="1" max="500" value="20" required></label>
+          <label>Öncelik<input id="fOncelik" type="number" min="1" max="5" value="2" required></label>
+          <button class="dugme" type="submit">Süreç ekle</button>
+        </form>
+      </section>
+
+      <div id="sonuclar" hidden>
+        <!-- 2. Özet -->
+        <section class="kartlar" id="kpiler"></section>
+        <section class="kart icgoru" id="icgoruler"></section>
+
+        <!-- 3. Gantt -->
+        <section class="kart">
+          <div class="baslik">
+            <h2>Gantt şeması <span class="soluk" id="yontemAdi"></span></h2>
+            <div class="oynatici">
+              <button type="button" class="ikon" id="basaDon" title="Başa dön">|◀</button>
+              <button type="button" class="ikon" id="oncekiOlay" title="Önceki olay">◀</button>
+              <button type="button" class="ikon vurgulu" id="oynat" title="Oynat">▶</button>
+              <button type="button" class="ikon" id="sonrakiOlay" title="Sonraki olay">▶|</button>
+              <span class="zaman" id="zamanEtiketi">t = 0 ms</span>
+            </div>
+          </div>
+          <div class="gantt" id="gantt"></div>
+          <input type="range" id="zamanKaydirici" min="0" max="100" value="0" aria-label="Simülasyon zamanı">
+        </section>
+
+        <!-- 4. O anki durum -->
+        <div class="iki-sutun">
+          <section class="kart">
+            <div class="baslik">
+              <h2 id="kuyrukBaslik">Hazır kuyruğu</h2>
+              <span class="soluk" id="kuyrukAn"></span>
+            </div>
+            <div id="kuyrukGorunum"></div>
+          </section>
+          <section class="kart">
+            <div class="baslik"><h2>Olay günlüğü</h2><span class="soluk">o ana kadar olanlar</span></div>
+            <ol class="gunluk" id="gunluk"></ol>
+          </section>
+        </div>
+
+        <!-- 5. Karşılaştırma -->
+        <section class="kart">
+          <div class="baslik"><h2>Üç yöntemin karşılaştırması <span class="soluk">aynı süreçlerle, ortalamalar (ms)</span></h2><span class="soluk">kısa çubuk daha iyi</span></div>
+          <div id="karsilastirma"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
