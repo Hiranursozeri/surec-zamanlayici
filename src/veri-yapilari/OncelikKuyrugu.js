@@ -1,59 +1,71 @@
 /**
- * Öncelik Kuyruğu (Priority Queue) - Sıralı bağlı liste ile
- * En öncelikli eleman her zaman listenin başında durur.
+ * Öncelik Kuyruğu (Priority Queue) - Min-heap ile
+ * En öncelikli eleman her zaman heap'in kökünde durur.
  * Öncelikli zamanlamada "hazır kuyruğu" olarak kullanılır.
  *
- * Not: Hoca heap'i anlattıktan sonra bu dosyanın içi min-heap ile
- * yeniden yazılacak. Metot adları aynı kalacağı için zamanlayıcı
- * kodlarında hiçbir şey değişmeyecek.
+ * İlk sürümde sıralı bağlı liste kullanıyorduk (ekle O(n), çıkar O(1)).
+ * Heap ile ikisi de O(log n) oldu. Metot adları aynı kaldığı için
+ * zamanlayıcı kodlarında hiçbir şey değişmedi.
  */
-const BagliListe = require('./BagliListe');
+const MinHeap = require('./MinHeap');
 
-// Varsayılan kural: önce önceliğe bak (küçük sayı = daha önemli),
-// öncelikler eşitse önce gelen (varış zamanı küçük olan) öne geçer.
+// Kural: önce öncelik (küçük sayı = daha önemli), sonra varış zamanı,
+// o da eşitse PID. Heap kendi başına "önce gelen önde" sırasını
+// korumadığı için eşitlikleri burada açıkça çözüyoruz.
 function varsayilanKarsilastir(a, b) {
-  if (a.oncelik !== b.oncelik) {
-    return a.oncelik - b.oncelik;
-  }
-  return a.varis - b.varis;
+  if (a.oncelik !== b.oncelik) return a.oncelik - b.oncelik;
+  if (a.varis !== b.varis) return a.varis - b.varis;
+  if (a.pid < b.pid) return -1;
+  if (a.pid > b.pid) return 1;
+  return 0;
 }
 
 class OncelikKuyrugu {
   constructor(karsilastir = varsayilanKarsilastir) {
-    this.liste = new BagliListe();  // elemanları sıralı tutan bağlı liste
+    this.heap = new MinHeap(karsilastir);
     this.karsilastir = karsilastir;
   }
 
   get boyut() {
-    return this.liste.boyut;
+    return this.heap.boyut;
   }
 
   bosMu() {
-    return this.liste.bosMu();
+    return this.heap.bosMu();
   }
 
-  // Ekle - O(n): doğru yeri bulana kadar listeyi gezer
+  // Ekle - O(log n)
   ekle(eleman) {
-    this.liste.siraliEkle(eleman, this.karsilastir);
+    this.heap.ekle(eleman);
   }
 
-  // En öncelikliyi çıkar - O(1): o zaten listenin başında
+  // En öncelikliyi çıkar - O(log n)
   cikar() {
     if (this.bosMu()) {
       throw new Error('Kuyruk boş');
     }
-    return this.liste.bastanCikar();
+    return this.heap.cikar();
   }
 
   // En öncelikliye bak ama çıkarma - O(1)
   onundeki() {
-    return this.bosMu() ? null : this.liste.bas.veri;
+    return this.heap.enKucuk();
   }
 
-  // Kuyruğun anlık içeriği (en öncelikliden en aza) - O(n)
-  // Arayüzdeki adım adım modda göstermek için
+  // Kuyruğun anlık içeriği, en öncelikliden en aza - O(n log n)
+  // Heap dizisi sıralı değildir. Bu yüzden bir kopya heap oluşturup
+  // ondan sırayla çıkarıyoruz. Asıl heap bozulmaz.
   elemanlar() {
-    return this.liste.diziyeCevir();
+    const kopya = new MinHeap(this.karsilastir);
+    for (const e of this.heap.diziHali()) kopya.ekle(e);
+    const sonuc = [];
+    while (!kopya.bosMu()) sonuc.push(kopya.cikar());
+    return sonuc;
+  }
+
+  // Heap'in ağaç sırasındaki hali - adım adım modda ağacı çizmek için
+  agacHali() {
+    return this.heap.diziHali();
   }
 }
 
