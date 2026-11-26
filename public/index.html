@@ -20,6 +20,7 @@
       </select>
     </label>
     <div class="bosluk"></div>
+    <button class="dugme" id="canliModu" title="Uygulamaları simülasyon akarken aç"><span class="canli-isik"></span>Canlı mod</button>
     <button class="dugme" id="temaDegistir" title="Temayı değiştir"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 1a6 6 0 0 1 0 12z" fill="currentColor"/></svg><span id="temaAdi">Koyu tema</span></button>
     <label class="dugme" for="iceAktarDosya">İçe aktar</label>
     <input type="file" id="iceAktarDosya" accept=".json,application/json" hidden>
@@ -67,6 +68,25 @@
 
     <main>
       <div class="hata" id="hata" role="alert" hidden></div>
+
+      <!-- Canlı mod: uygulamalar simülasyon akarken açılır -->
+      <section class="kart canli-kart" id="canliKart" hidden>
+        <div class="baslik">
+          <h2><span class="canli-isik"></span>Canlı mod <span class="soluk">Bir uygulamaya tıkla, tam o anda açılsın</span></h2>
+          <div class="canli-kontrol">
+            <span class="canli-saat" id="canliSaat">t = 0 ms</span>
+            <select id="canliHiz" aria-label="Saat hızı">
+              <option value="15">Yavaş</option>
+              <option value="30" selected>Normal</option>
+              <option value="60">Hızlı</option>
+            </select>
+            <button class="dugme" id="canliDuraklat" type="button" disabled>❚❚ Duraklat</button>
+            <button class="dugme birincil" id="canliBitir" type="button">■ Bitir ve sonuçları göster</button>
+          </div>
+        </div>
+        <div class="uygulamalar" id="uygulamalar"></div>
+        <p class="canli-ipucu" id="canliIpucu">Saat, ilk uygulamayı açtığında başlar. Soldan yöntemi değiştirirsen aynı an için yeniden hesaplanır.</p>
+      </section>
 
       <!-- 1. Süreçler ve sonuçları tek tabloda -->
       <section class="kart">
@@ -149,7 +169,7 @@
         </div>
 
         <!-- 5. Karşılaştırma -->
-        <section class="kart">
+        <section class="kart" id="karsilastirmaKart">
           <div class="baslik"><h2>Üç yöntemin karşılaştırması <span class="soluk">aynı süreçlerle, ortalamalar (ms)</span></h2><span class="soluk">kısa çubuk daha iyi</span></div>
           <div id="karsilastirma"></div>
         </section>
@@ -158,5 +178,6 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="canli.js"></script>
 </body>
 </html>

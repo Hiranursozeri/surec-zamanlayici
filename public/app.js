@@ -12,6 +12,7 @@ const durum = {
   karsilastirma: null,   // /api/karsilastir cevabı
   t: 0,                  // ekranda gösterilen an (ms)
   oynuyor: false,
+  canli: false,          // canlı mod açık mı (canli.js)
 };
 
 // Süreç türleri (sunucudaki Surec.js ile aynı)
@@ -133,6 +134,7 @@ async function senaryolariYukle() {
 }
 
 async function senaryoSec(id) {
+  if (durum.canli) canliKapat();
   if (!id) {
     $('senaryoKart').hidden = true;
     return;
@@ -156,7 +158,11 @@ async function senaryoSec(id) {
 // ===== Süreçler ve sonuçları tablosu =====
 function surecListesiCiz() {
   const r = durum.sonuc;
-  const satirSonuc = pid => (r ? r.surecler.find(s => s.pid === pid) : null);
+  // Canlı modda sadece o ana kadar bitmiş süreçlerin sonucu gösterilir
+  const satirSonuc = pid => {
+    const x = r ? r.surecler.find(s => s.pid === pid) : null;
+    return x && (!durum.canli || x.bitis <= durum.t) ? x : null;
+  };
   const enCok = r ? Math.max(...r.surecler.map(s => s.bekleme)) : null;
 
   if (durum.surecler.length === 0) {
@@ -178,7 +184,7 @@ function surecListesiCiz() {
     }).join('');
   }
 
-  $('tabloAlt').innerHTML = r && durum.surecler.length ? `
+  $('tabloAlt').innerHTML = r && durum.surecler.length && !durum.canli ? `
     <tr><td colspan="5">Ortalama</td><td></td><td></td>
       <td class="sag">${yaz(r.ortalama.yanit)}</td><td class="sag">${yaz(r.ortalama.bekleme)}</td><td class="sag">${yaz(r.ortalama.donus)}</td><td></td></tr>` : '';
   $('surecSayisi').textContent = `${durum.surecler.length} / ${EN_FAZLA_SUREC}`;
@@ -187,6 +193,12 @@ function surecListesiCiz() {
 
 function surecEkle(e) {
   e.preventDefault();
+  if (durum.canli) {
+    // Canlı modda süreç tam şu anda açılır (canli.js)
+    canliEkle({ ad: $('fAd').value.trim(), tur: $('fTur').value, sure: Number($('fSure').value), oncelik: Number($('fOncelik').value) });
+    $('fAd').value = '';
+    return;
+  }
   if (durum.surecler.length >= EN_FAZLA_SUREC) {
     return hataGoster(`En fazla ${EN_FAZLA_SUREC} süreç eklenebilir.`);
   }
@@ -207,20 +219,23 @@ function surecEkle(e) {
 }
 
 // ===== Simülasyon =====
+let istekNo = 0;
 async function calistir() {
   if (durum.surecler.length === 0) {
     return hataGoster('Önce en az bir süreç ekle ya da bir senaryo seç.');
   }
   const govde = { surecler: durum.surecler, yontem: durum.yontem, ayarlar: ayarlar() };
+  const no = ++istekNo;
   $('calistir').disabled = true;
   try {
     const [sonuc, karsilastirma] = await Promise.all([
       api('/api/simule', govde),
       api('/api/karsilastir', govde),
     ]);
+    if (no !== istekNo) return;   // bu arada daha yeni bir istek gönderildi
     durum.sonuc = sonuc;
     durum.karsilastirma = karsilastirma;
-    durum.t = zamanAraligi()[1];  // önce sonucun tamamını göster
+    if (!durum.canli) durum.t = zamanAraligi()[1];  // önce sonucun tamamını göster
     hataGoster('');
     $('sonuclar').hidden = false;
     hepsiniCiz();
@@ -233,7 +248,10 @@ async function calistir() {
 
 function zamanAraligi() {
   const g = durum.sonuc.gantt;
-  return [Math.min(...g.map(p => p.baslangic)), Math.max(...g.map(p => p.bitis))];
+  const son = Math.max(...g.map(p => p.bitis));
+  // Canlı modda zaman ekseni saatle birlikte uzar
+  if (durum.canli) return [0, Math.max(son, Math.ceil(durum.t), 50)];
+  return [Math.min(...g.map(p => p.baslangic)), son];
 }
 
 function hepsiniCiz() {
@@ -253,6 +271,7 @@ function anCiz() {
   ganttCiz();
   kuyrukCiz();
   gunlukCiz();
+  if (durum.canli) surecListesiCiz();
 }
 
 // ===== Özet kartları =====
@@ -611,6 +630,7 @@ $('surecListesi').addEventListener('click', e => {
   degisiklikOldu();
 });
 function temizle() {
+  if (durum.canli) canliKapat();
   durum.surecler = [];
   durum.sonuc = null;
   $('senaryoSec').value = '';
