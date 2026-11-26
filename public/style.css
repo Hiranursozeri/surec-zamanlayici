@@ -120,7 +120,7 @@ main { padding: 20px 22px 32px; display: flex; flex-direction: column; gap: 16px
 .sayac { display: flex; height: 32px; border: 1px solid var(--cizgi); border-radius: 8px; overflow: hidden; flex: none; background: var(--kart); }
 .sayac button { width: 28px; border: none; background: none; color: var(--soluk); cursor: pointer; }
 .sayac button:hover { background: var(--kart-2); color: var(--metin); }
-.sayac input { width: 46px; text-align: center; border: none; border-left: 1px solid var(--cizgi); border-right: 1px solid var(--cizgi); background: none; font-weight: 650; -moz-appearance: textfield; }
+.sayac input { width: 46px; text-align: center; border: none; border-left: 1px solid var(--cizgi); border-right: 1px solid var(--cizgi); background: none; font-weight: 650; -moz-appearance: textfield; appearance: textfield; }
 .sayac input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .anahtar { position: relative; width: 38px; height: 22px; flex: none; cursor: pointer; }
 .anahtar input { opacity: 0; width: 0; height: 0; }
@@ -279,3 +279,25 @@ td { padding: 9px 10px; border-bottom: 1px solid var(--cizgi-2); font-variant-nu
   #zamanKaydirici { width: calc(100% - 110px); margin-left: 110px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===== Canlı mod ===== */
+.canli-kart { border-color: var(--vurgu); box-shadow: 0 0 0 1px var(--vurgu); }
+.canli-kart[hidden] { display: none; }
+.canli-isik { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--imlec); margin-right: 8px; vertical-align: 0; }
+.canli-kart.akiyor .canli-isik { animation: nabiz 1.2s ease-in-out infinite; }
+@keyframes nabiz { 50% { opacity: .25; } }
+.canli-kontrol { display: flex; align-items: center; gap: 8px; }
+.canli-saat { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--imlec); min-width: 120px; text-align: right; margin-right: 6px; }
+.canli-kontrol select { height: 34px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--cizgi); background: var(--kart); }
+.uygulamalar { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.uygulama-dugme { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cizgi); background: var(--kart-2); cursor: pointer; transition: transform .08s, border-color .12s; }
+.uygulama-dugme:hover { border-color: var(--vurgu); }
+.uygulama-dugme:active { transform: scale(.97); }
+.uygulama-dugme .simge { grid-row: span 2; font-size: 24px; line-height: 1; text-align: center; }
+.uygulama-dugme b { font-size: 13px; font-weight: 650; }
+.uygulama-dugme small { color: var(--soluk); font-size: 11.5px; }
+.canli-ipucu { color: var(--soluk); margin-top: 12px; line-height: 1.5; }
+body.canli-modu #kpiler, body.canli-modu #icgoruler, body.canli-modu #karsilastirmaKart,
+body.canli-modu .oynatici button, body.canli-modu #zamanKaydirici,
+body.canli-modu .ekle-satiri label:has(#fVaris) { display: none; }
+@media (prefers-reduced-motion: reduce) { .canli-kart.akiyor .canli-isik { animation: none; } }
